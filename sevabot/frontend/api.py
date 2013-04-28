@@ -177,14 +177,21 @@ class JenkinsNotifier(SendMessage):
             logger.error(request.form.items())
             return "Jenkins bad notification: Could not read HTTP POST data"
 
-        # Filter out completed status, lots of unneeded noise
-        if payload['build']['phase'] != 'COMPLETED':
+        # Ignore completed status, lots of unneeded noise
+
+        if payload['build']['phase'] == 'STARTED':
+            msg = u'(coffee) Project: %s build #%d has started\n' % (payload['name'], payload['build']['number'])
+        elif payload['build']['phase'] == 'FINISHED':
             if payload['build']['status'] == 'SUCCESS':
-                msg = u'Project: %s build #%d %s Status: %s - (sun) - %s\n' % (payload['name'], payload['build']['number'], payload['build']['phase'], payload['build']['status'], payload['build']['full_url'])
+                msg = u'Project: %s build #%d %s Status: %s - (sun) - %s\n'\
+                      % (payload['name'], payload['build']['number'], payload['build']['phase'], payload['build']['status'], payload['build']['full_url'])
             elif payload['build']['status'] == 'FAILURE':
-                msg = u'Project: %s build #%d %s Status: %s - (rain) - %s\n' % (payload['name'], payload['build']['number'], payload['build']['phase'], payload['build']['status'], payload['build']['full_url'])
-            else:
-                msg = u'Project: %s build #%d %s Status: %s - - %s\n' % (payload['name'], payload['build']['number'], payload['build']['phase'], payload['build']['status'], payload['build']['full_url'])
+                msg = u'Project: %s build #%d %s Status: %s - (rain) - %s\n'\
+                      % (payload['name'], payload['build']['number'], payload['build']['phase'], payload['build']['status'], payload['build']['full_url'])
+        elif payload['build']['phase'] != 'COMPLETED':
+            # Some other phase:
+            msg = u'Project: %s build #%d %s Status: %s - - %s\n'\
+                  % (payload['name'], payload['build']['number'], payload['build']['phase'], payload['build'].get('status', '<no status>'), payload['build']['full_url'])
 
         return msg
 
